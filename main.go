@@ -21,7 +21,7 @@ import (
 )
 
 // Text for learning
-var Text = `In the beginning` /* God created the heaven and the earth.
+var Text = `In the beginning God created the heaven and the earth.` /*
 And the earth was without form, and void; and darkness was upon the face of the deep.
 And the Spirit of God moved upon the face of the waters.
 And God said, Let there be light: and there was light..`*/
@@ -41,8 +41,8 @@ func main() {
 	fmt.Println(Text)
 
 	rnd := rand.New(rand.NewSource(3))
-	random128 := func(a, b float64) complex128 {
-		return complex((b-a)*rnd.Float64()+a, (b-a)*rnd.Float64()+a)
+	random128 := func(a, b, c float64) complex128 {
+		return complex(((b-a)*rnd.Float64()+a)/math.Sqrt(c), ((b-a)*rnd.Float64()+a)/math.Sqrt(c))
 	}
 
 	parameters := make([]*tc128.V, 0, 4)
@@ -52,7 +52,7 @@ func main() {
 	parameters = append(parameters, &w0, &b0, &w1, &b1, &w2, &b2)
 	for _, p := range parameters {
 		for i := 0; i < cap(p.X); i++ {
-			p.X = append(p.X, random128(-2, 2))
+			p.X = append(p.X, random128(-1, 1, float64(p.S[0])))
 		}
 	}
 
@@ -63,7 +63,7 @@ func main() {
 		for e := range encoding {
 			encoding[e] = cmplx.Rect(0, math.Pi*float64(i)/float64(length))
 		}
-		encoding[in] = cmplx.Rect(1.0, math.Pi*float64(i)/float64(length))
+		encoding[in] = cmplx.Rect(1, math.Pi*float64(i)/float64(length))
 		input.X = append(input.X, encoding...)
 		j := (i + 8) % length
 		out := Text[j]
@@ -71,7 +71,7 @@ func main() {
 		for e := range encoding {
 			encoding[e] = cmplx.Rect(0, math.Pi*float64(j)/float64(length))
 		}
-		encoding[out] = cmplx.Rect(1.0, math.Pi*float64(j)/float64(length))
+		encoding[out] = cmplx.Rect(1, math.Pi*float64(j)/float64(length))
 		output.X = append(output.X, encoding...)
 	}
 
@@ -148,6 +148,7 @@ func main() {
 		type Symbol struct {
 			Symbol byte
 			Order  float64
+			Score  float64
 		}
 		input := tc128.NewV(Width)
 		encoding := make([]complex128, Width)
@@ -155,6 +156,9 @@ func main() {
 		l1 := tc128.Sigmoid(tc128.Add(tc128.Mul(w1.Meta(), l0), b1.Meta()))
 		l2 := tc128.Sigmoid(tc128.Add(tc128.Mul(w2.Meta(), l1), b2.Meta()))
 		symbols := make([]Symbol, 0)
+		for e := range encoding {
+			encoding[e] = cmplx.Rect(0, math.Pi*float64(0)/float64(length))
+		}
 		encoding[byte('I')] = cmplx.Rect(1.0, math.Pi*float64(0)/float64(length))
 		symbol := Symbol{
 			Symbol: byte('I'),
@@ -171,10 +175,14 @@ func main() {
 				})
 				for j, value := range a.X {
 					//if i > 0 && math.Abs(cmplx.Phase(value)) > symbols[len(symbols)-1].Order {
+					if j == 110 {
+						fmt.Println("here 110", i, cmplx.Abs(value))
+					}
 					if cmplx.Abs(value) > cmplx.Abs(max) {
 						max = value
 						symbol.Symbol = byte(j)
 						symbol.Order = math.Abs(cmplx.Phase(value))
+						symbol.Score = cmplx.Abs(value)
 					}
 					//}
 				}
@@ -182,7 +190,10 @@ func main() {
 			})
 
 			encoding = make([]complex128, Width)
-			for j := 0; j < length; j++ {
+			for e := range encoding {
+				encoding[e] = cmplx.Rect(0, math.Pi*float64(i+1)/float64(length))
+			}
+			/*for j := 0; j < length; j++ {
 				a := math.Pi * float64(j) / float64(length)
 				b := math.Pi * float64(j+1) / float64(length)
 				if symbol.Order > a && symbol.Order < b {
@@ -194,10 +205,11 @@ func main() {
 						symbol.Order = b
 					}
 				}
-			}
+			}*/
+			symbol.Order = math.Pi * float64(i+1) / float64(length)
 			symbols = append(symbols, symbol)
 			symbol = Symbol{}
-			encoding[symbol.Symbol] = cmplx.Rect(1.0, symbol.Order)
+			encoding[symbol.Symbol] = cmplx.Rect(1, symbol.Order)
 		}
 		for _, symbol := range symbols {
 			fmt.Println(symbol)
