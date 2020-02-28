@@ -159,57 +159,57 @@ func main() {
 		for e := range encoding {
 			encoding[e] = cmplx.Rect(0, math.Pi*float64(0)/float64(length))
 		}
-		encoding[byte('I')] = cmplx.Rect(.001, math.Pi*float64(0)/float64(length))
+		sym := byte('I')
+		encoding[sym] = cmplx.Rect(.001, math.Pi*float64(0)/float64(length))
 		symbol := Symbol{
-			Symbol: byte('I'),
+			Symbol: sym,
 			Order:  math.Pi * float64(0) / float64(length),
 		}
 		symbols = append(symbols, symbol)
 		for i := 0; i < length; i++ {
-			input.Set(encoding)
-
-			l2(func(a *tc128.V) bool {
-				var max complex128
-				sort.Slice(a.X, func(i, j int) bool {
-					return math.Abs(cmplx.Phase(a.X[i])) < math.Abs(cmplx.Phase(a.X[j]))
+			search := func() {
+				l2(func(a *tc128.V) bool {
+					var max complex128
+					sort.Slice(a.X, func(i, j int) bool {
+						return math.Abs(cmplx.Phase(a.X[i])) < math.Abs(cmplx.Phase(a.X[j]))
+					})
+					for j, value := range a.X {
+						//if i > 0 && math.Abs(cmplx.Phase(value)) > symbols[len(symbols)-1].Order {
+						if j == 110 {
+							fmt.Println("here 110", i, cmplx.Abs(value))
+						}
+						if cmplx.Abs(value) > cmplx.Abs(max) {
+							max = value
+							symbol.Symbol = byte(j)
+							symbol.Order = math.Abs(cmplx.Phase(value))
+							symbol.Score = cmplx.Abs(value)
+						}
+						//}
+					}
+					return true
 				})
-				for j, value := range a.X {
-					//if i > 0 && math.Abs(cmplx.Phase(value)) > symbols[len(symbols)-1].Order {
-					if j == 110 {
-						fmt.Println("here 110", i, cmplx.Abs(value))
-					}
-					if cmplx.Abs(value) > cmplx.Abs(max) {
-						max = value
-						symbol.Symbol = byte(j)
-						symbol.Order = math.Abs(cmplx.Phase(value))
-						symbol.Score = cmplx.Abs(value)
-					}
-					//}
-				}
-				return true
-			})
+			}
+
+			input.Set(encoding)
+			search()
+
+			encoding = make([]complex128, Width)
+			for e := range encoding {
+				encoding[e] = cmplx.Rect(0, math.Pi*float64(i+1)/float64(length)-2*math.Pi)
+			}
+			encoding[sym] = cmplx.Rect(.001, math.Pi*float64(i+1)/float64(length)-2*math.Pi)
+			input.Set(encoding)
+			search()
 
 			encoding = make([]complex128, Width)
 			for e := range encoding {
 				encoding[e] = cmplx.Rect(0, math.Pi*float64(i+1)/float64(length))
 			}
-			/*for j := 0; j < length; j++ {
-				a := math.Pi * float64(j) / float64(length)
-				b := math.Pi * float64(j+1) / float64(length)
-				if symbol.Order > a && symbol.Order < b {
-					diffa := symbol.Order - a
-					diffb := b - symbol.Order
-					if diffa < diffb {
-						symbol.Order = a
-					} else {
-						symbol.Order = b
-					}
-				}
-			}*/
 			symbol.Order = math.Pi * float64(i+1) / float64(length)
 			symbols = append(symbols, symbol)
-			symbol = Symbol{}
 			encoding[symbol.Symbol] = cmplx.Rect(.001, symbol.Order)
+			sym = symbol.Symbol
+			symbol = Symbol{}
 		}
 		for _, symbol := range symbols {
 			fmt.Println(symbol)
