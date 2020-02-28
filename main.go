@@ -63,7 +63,7 @@ func main() {
 		for e := range encoding {
 			encoding[e] = cmplx.Rect(0, math.Pi*float64(i)/float64(length))
 		}
-		encoding[in] = cmplx.Rect(1, math.Pi*float64(i)/float64(length))
+		encoding[in] = cmplx.Rect(.001, math.Pi*float64(i)/float64(length))
 		input.X = append(input.X, encoding...)
 		j := (i + 8) % length
 		out := Text[j]
@@ -71,13 +71,13 @@ func main() {
 		for e := range encoding {
 			encoding[e] = cmplx.Rect(0, math.Pi*float64(j)/float64(length))
 		}
-		encoding[out] = cmplx.Rect(1, math.Pi*float64(j)/float64(length))
+		encoding[out] = cmplx.Rect(.001, math.Pi*float64(j)/float64(length))
 		output.X = append(output.X, encoding...)
 	}
 
-	l0 := tc128.Sigmoid(tc128.Add(tc128.Mul(w0.Meta(), input.Meta()), b0.Meta()))
-	l1 := tc128.Sigmoid(tc128.Add(tc128.Mul(w1.Meta(), l0), b1.Meta()))
-	l2 := tc128.Sigmoid(tc128.Add(tc128.Mul(w2.Meta(), l1), b2.Meta()))
+	l0 := tc128.TanH(tc128.Add(tc128.Mul(w0.Meta(), input.Meta()), b0.Meta()))
+	l1 := tc128.TanH(tc128.Add(tc128.Mul(w1.Meta(), l0), b1.Meta()))
+	l2 := tc128.TanH(tc128.Add(tc128.Mul(w2.Meta(), l1), b2.Meta()))
 	cost := tc128.Avg(tc128.Quadratic(l2, output.Meta()))
 
 	iterations := 32
@@ -152,14 +152,14 @@ func main() {
 		}
 		input := tc128.NewV(Width)
 		encoding := make([]complex128, Width)
-		l0 := tc128.Sigmoid(tc128.Add(tc128.Mul(w0.Meta(), input.Meta()), b0.Meta()))
-		l1 := tc128.Sigmoid(tc128.Add(tc128.Mul(w1.Meta(), l0), b1.Meta()))
-		l2 := tc128.Sigmoid(tc128.Add(tc128.Mul(w2.Meta(), l1), b2.Meta()))
+		l0 := tc128.TanH(tc128.Add(tc128.Mul(w0.Meta(), input.Meta()), b0.Meta()))
+		l1 := tc128.TanH(tc128.Add(tc128.Mul(w1.Meta(), l0), b1.Meta()))
+		l2 := tc128.TanH(tc128.Add(tc128.Mul(w2.Meta(), l1), b2.Meta()))
 		symbols := make([]Symbol, 0)
 		for e := range encoding {
 			encoding[e] = cmplx.Rect(0, math.Pi*float64(0)/float64(length))
 		}
-		encoding[byte('I')] = cmplx.Rect(1.0, math.Pi*float64(0)/float64(length))
+		encoding[byte('I')] = cmplx.Rect(.001, math.Pi*float64(0)/float64(length))
 		symbol := Symbol{
 			Symbol: byte('I'),
 			Order:  math.Pi * float64(0) / float64(length),
@@ -209,7 +209,7 @@ func main() {
 			symbol.Order = math.Pi * float64(i+1) / float64(length)
 			symbols = append(symbols, symbol)
 			symbol = Symbol{}
-			encoding[symbol.Symbol] = cmplx.Rect(1, symbol.Order)
+			encoding[symbol.Symbol] = cmplx.Rect(.001, symbol.Order)
 		}
 		for _, symbol := range symbols {
 			fmt.Println(symbol)
